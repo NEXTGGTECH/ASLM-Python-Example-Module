@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Python Module</title>
+    <script type="application/json" id="aslm-theme-data">{{ theme_payload | safe }}</script>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script>
+        (function () {
+            try {
+                var raw = document.getElementById("aslm-theme-data");
+                if (!raw) return;
+                var payload = JSON.parse(raw.textContent);
+                document.documentElement.setAttribute("data-theme", (payload.theme || "dark").toLowerCase());
+            } catch (_) {}
+        })();
+    </script>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<header class="app-header">
+    <div class="app-header-main">
+        <div class="app-header-title-row">
+            <h1>Example Python Module</h1>
+            <span class="badge">v{{ version }}</span>
+        </div>
+        <p class="subtitle">Reference dashboard for ASLM Python modules — settings (getExec/setExec), downloads bridge stdio protocol, host theme/locale snapshots, and module interop HTTP.</p>
+    </div>
+    <nav class="app-header-actions" aria-label="External links">
+        <a class="btn btn--ghost"
+           href="https://github.com/NEXTGGTECH/ASLM-Python-Example-Module#readme"
+           target="_blank" rel="noopener noreferrer">README</a>
+        <a class="btn btn--ghost"
+           href="https://github.com/NEXTGGTECH/ASLM-Python-Example-Module#readme"
+           target="_blank" rel="noopener noreferrer">Developer docs</a>
+        <a class="btn btn--primary"
+           href="https://github.com/NEXTGGTECH/ASLM-Python-Example-Module"
+           target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+</header>
+
+<main class="dashboard">
+
+    <section class="card" id="section-info">
+        <div class="card-header">
+            <h2>Module Info</h2>
+            <span class="card-tag">runtime</span>
+        </div>
+        <div class="card-body">
+            <p class="card-lead">
+                Runtime snapshot from <code>GET /api/info</code>. ASLM injects <code>ASLM_MODULE_ID</code>, <code>ASLM_MODULE_DIR</code>, <code>ASLM_UI_PORT</code>, and <code>ASLM_&lt;settingKey&gt;</code> before
+                <code>runserver</code>, <code>downloads_bridge</code>, or <code>get_setting</code>/<code>set_setting</code>.
+                <code>ASLM_ENGINE_ENV_DIR</code> points at <code>Engines/Python/venv-&lt;module-id&gt;/</code> (pip installs from manifest).
+            </p>
+            <div id="info-table"><p class="state-msg">Loading…</p></div>
+            <h3 class="card-subhead">Manifest summary</h3>
+            <div id="manifest-table"><p class="state-msg">Loading…</p></div>
+            <h3 class="card-subhead">All ASLM_* variables</h3>
+            <div id="env-table"><p class="state-msg">Loading…</p></div>
+        </div>
+    </section>
+
+    <section class="card" id="section-locale">
+        <div class="card-header">
+            <h2>Host Locale</h2>
+            <span class="card-tag">type: locale</span>
+        </div>
+        <div class="card-body">
+            <p class="card-lead">
+                Host pushes <code>Settings/host_locale.json</code> via <code>apply_aslm_locale --file &lt;path&gt;</code> on module start and when the user changes ASLM language.
+                Read <code>language</code> / <code>displayName</code> to pick UI strings; setting type <code>locale</code> has no getExec.
+            </p>
+            <div id="locale-content"><p class="state-msg">Loading…</p></div>
+        </div>
+    </section>
+
+    <!-- Settings full width -->
+    <section class="card" id="section-settings">
+        <div class="card-header">
+            <h2>Settings</h2>
+            <span class="card-tag">all types</span>
+        </div>
+        <div class="card-body">
+            <p class="card-lead">
+                Values from <code>settings.json</code> merged with manifest defaults. Each row maps to <code>main.py get_setting --key …</code> / <code>set_setting --key … --value …</code>.
+                Types <code>theme</code> and <code>locale</code> are host-only (setExec with <code>--file</code>); <code>path</code>, <code>data</code>, <code>models</code> are normally ASLM-managed paths.
+            </p>
+            <div class="table-scroll">
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th class="col-key">Key</th>
+                            <th class="col-name">Name</th>
+                            <th class="col-type">Type</th>
+                            <th class="col-value">Value</th>
+                            <th class="col-default">Default</th>
+                            <th class="col-desc">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="settings-table-body">
+                        <tr><td colspan="6"><p class="state-msg">Loading…</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Theme full width -->
+    <section class="card" id="section-theme">
+        <div class="card-header">
+            <h2>Host Theme</h2>
+            <span class="card-tag">type: theme</span>
+        </div>
+        <div class="card-body">
+            <p class="card-lead">
+                <code>colors.*</code> tokens from <code>apply_aslm_host_theme --file &lt;path&gt;</code> (persisted as <code>Settings/host_theme.json</code>).
+                Map keys such as <code>BackgroundPrimary</code> and <code>SystemBlue</code> to CSS variables so the WebView matches ASLM chrome.
+            </p>
+            <div id="theme-content"><p class="state-msg">Loading…</p></div>
+        </div>
+    </section>
+
+    <!-- Module Interop — full interactive panel -->
+    <section class="card" id="section-interop">
+        <div class="card-header">
+            <h2>Module Interop</h2>
+            <span class="card-tag">moduleInterop</span>
+        </div>
+        <div class="card-body">
+            <p class="card-lead">
+                Requires <code>moduleInterop.client.enabled</code> and a running caller (<code>aslm-python-example</code>).
+                Use <code>GET /v1/registry</code> to discover modules; <code>POST /v1/modules/start</code> with <code>callerModuleId</code> + <code>moduleIds[]</code> to launch others.
+                The exchange log below shows exact JSON sent to the host listener (<code>ASLM_MODULE_INTEROP_BASE_URL</code>).
+            </p>
+
+            <h3 class="card-subhead">Supported HTTP API</h3>
+            <div id="interop-api-spec"><p class="state-msg">Loading…</p></div>
+
+            <div id="interop-alert" hidden></div>
+
+            <dl class="interop-meta" id="interop-meta">
+                <div>
+                    <dt>Interop base URL</dt>
+                    <dd id="interop-base-url">—</dd>
+                </div>
+                <div>
+                    <dt>Caller module ID</dt>
+                    <dd id="interop-caller-id">—</dd>
+                </div>
+                <div>
+                    <dt>Running / installed</dt>
+                    <dd id="interop-counts">—</dd>
+                </div>
+            </dl>
+
+            <p id="interop-hint" class="interop-hint is-hidden"></p>
+
+            <div class="toolbar" id="interop-toolbar" hidden>
+                <input type="search" class="input-text" id="interop-filter" placeholder="Filter by id or name…" aria-label="Filter modules" />
+                <label class="checkbox-label">
+                    <input type="checkbox" id="interop-auto-refresh" />
+                    Auto-refresh (example-int)
+                </label>
+                <button type="button" class="btn" id="interop-refresh-btn">Refresh registry</button>
+                <button type="button" class="btn btn--primary" id="interop-start-selected-btn" disabled>
+                    Start selected
+                </button>
+                <button type="button" class="btn" id="interop-start-stopped-btn" disabled>
+                    Start all stopped
+                </button>
+            </div>
+
+            <div class="interop-panels" id="interop-panels" hidden>
+                <div class="interop-panel">
+                    <div class="interop-panel-head">Installed modules</div>
+                    <div class="interop-table-wrap">
+                        <table class="interop-table" id="interop-installed-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:32px"><input type="checkbox" id="interop-select-all" title="Select all" /></th>
+                                    <th>Module</th>
+                                    <th>State</th>
+                                    <th>Details</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="interop-installed-body">
+                                <tr><td colspan="5"><p class="state-msg">Loading…</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="interop-panel">
+                    <div class="interop-panel-head">Running modules</div>
+                    <div class="interop-table-wrap">
+                        <table class="interop-table" id="interop-running-table">
+                            <thead>
+                                <tr>
+                                    <th>Module</th>
+                                    <th>Instance</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="interop-running-body">
+                                <tr><td colspan="3"><p class="state-msg">Loading…</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="interop-result" hidden></div>
+
+            <h3 class="card-subhead">Host HTTP exchange log</h3>
+            <div id="interop-exchange-log" class="exchange-log">
+                <p class="state-msg">Refresh the registry or start a module to see request/response JSON.</p>
+            </div>
+
+            <details class="block-details">
+                <summary>Parsed registry snapshot (Flask /api/interop)</summary>
+                <pre class="json-pre" id="interop-raw-json">—</pre>
+            </details>
+        </div>
+    </section>
+
+    <!-- Downloads — responsive 2-col ops on wide screens -->
+    <section class="card" id="section-downloads">
+        <div class="card-header">
+            <h2>Downloads Bridge</h2>
+            <span class="card-tag">downloadsBridge</span>
+        </div>
+        <div class="card-body">
+            <p class="card-lead">
+                Production flow: ASLM spawns <code>main.py downloads_bridge</code>, writes one JSON request to stdin, reads one JSON response from stdout.
+                Implement <code>dispatch()</code> in <code>Services/downloads_bridge.py</code>; register operations in <code>ASLM_Module.json → downloadsBridge.operations</code>.
+                Below: all five operations executed in-process for inspection (stdin request + stdout response per op).
+            </p>
+            <p id="downloads-protocol-note" class="bridge-protocol-note is-hidden"></p>
+            <div id="downloads-content" class="bridge-ops"><p class="state-msg">Loading…</p></div>
+        </div>
+    </section>
+
+</main>
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
